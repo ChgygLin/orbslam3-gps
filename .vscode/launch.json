@@ -1,0 +1,19 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "C++ Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/Examples/Monocular/mono_tum",
+            //"args": ["Vocabulary/ORBvoc.txt", "Examples/Monocular/TUM1.yaml", "/home/chg/data/datasets/SLAM/rgbd_dataset_freiburg1_xyz"],
+            // "args": ["Vocabulary/ORBvoc.txt", "Examples/Monocular/TUM1.yaml", "/home/chg/data/datasets/UAV/2"], 
+            "args": ["Vocabulary/ORBvoc.txt", "Examples/Monocular/TUM1.yaml", "/home/chg/data/datasets/D455/1116-data/img"], 
+            "environment": [{ "name": "config", "value": "Debug" }],
+            "cwd": "${workspaceFolder}"
+          }
+    ]
+}
