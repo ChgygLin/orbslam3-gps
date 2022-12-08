@@ -150,7 +150,18 @@ namespace ORB_SLAM3
                         }
                         else
                         {
-                            Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, &mbAbortBA, mpCurrentKeyFrame->GetMap(), num_FixedKF_BA, num_OptKF_BA, num_MPs_BA, num_edges_BA);
+                            Eigen::Matrix3Xd co_inecef;
+
+                            HandleSomeGPS(co_inecef);
+
+                            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+                            // Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, &mbAbortBA, mpCurrentKeyFrame->GetMap(), num_FixedKF_BA, num_OptKF_BA, num_MPs_BA, num_edges_BA);
+                            Optimizer::LocalBundleAdjustmentWithGPS(mpCurrentKeyFrame, co_inecef, &mbAbortBA, mpCurrentKeyFrame->GetMap(), num_FixedKF_BA, num_OptKF_BA, num_MPs_BA, num_edges_BA);
+                            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+
+                            double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+                            cout <<endl<< "LocalBundleAdjustment time:" << ttrack << endl <<endl;
+
                             b_doneLBA = true;
                         }
                     }
@@ -248,132 +259,6 @@ namespace ORB_SLAM3
                 vdKFCullingSync_ms.push_back(timeKFCulling_ms);
 #endif
 
-                vector<KeyFrame *> vpKFs = mpAtlas->GetAllKeyFrames();
-
-                int N = (int)vpKFs.size();
-
-                // cout<<"Current keyframe num: "<<N<<endl;
-                if (N >= 3)
-                {
-                    GeoTransform geo;
-
-                    // 创始化相机质心
-                    // cv::Mat O_T = (cv::Mat_<float>(3,1) << 0 , 0, 0);
-                    // cv::Mat O_e = (cv::Mat_<float>(3,1) << 0 , 0, 0);
-                    Eigen::Vector3d O_T;
-                    Eigen::Vector3d O_e;
-
-                    // 用于计算H
-                    // cv::Mat T_ = cv::Mat_<float>(3, N);
-                    // cv::Mat E_ = cv::Mat_<float>(3, N);
-                    Eigen::Matrix<double, 3, Eigen::Dynamic> T_;
-                    Eigen::Matrix<double, 3, Eigen::Dynamic> E_;
-
-                    // 不能直接在定义的时候，直接写大小<3, N>
-                    T_.resize(3, N);
-                    E_.resize(3, N);
-
-                    // cout<<"当前所有的关键帧数: ----------------- start -------------------------"<<N<<endl;
-
-                    // 构造T、E
-                    KeyFrame *pKF;
-                    // cv::Mat twc;
-                    // Eigen::Matrix<float, 3, 1> twc;
-                    Eigen::Vector3f twc; // 3行1列向量，等价于上
-
-                    for (size_t i = 0; i < N; i++)
-                    {
-                        pKF = vpKFs[i];
-
-                        twc = pKF->GetCameraCenter();
-                        // twc.convertTo(twc, CV_64FC1);
-                        T_.col(i) = twc.cast<double>();
-                        E_.col(i) << pKF->mECEF.x, pKF->mECEF.y, pKF->mECEF.z;
-                    }
-
-                    // cout<<"T初始: "<<endl<<T_<<endl<<endl;
-                    // cout<<"E初始: "<<endl<<E_<<endl<<endl;
-
-                    // T、E的按行求均值
-                    O_T = T_.rowwise().mean();
-                    O_e = E_.rowwise().mean();
-                    // cout<<"T mean: "<<endl<<O_T<<endl<<endl;
-                    // cout<<"E mean: "<<endl<<O_e<<endl<<endl;
-
-                    // 矩阵-向量 广播运算
-                    T_.colwise() -= O_T;
-                    E_.colwise() -= O_e;
-                    // cout<<"T减均值: "<<endl<<T_<<endl<<endl;
-                    // cout<<"E减均值: "<<endl<<E_<<endl<<endl;
-
-                    // 按列求norm,共N列
-                    Eigen::VectorXd norm_t = T_.colwise().norm();
-                    Eigen::VectorXd norm_e = E_.colwise().norm();
-
-                    // 按元素相除,再取均值
-                    geo.s = (norm_e.array() / norm_t.array()).matrix().mean();
-
-                    // 判断s有效
-                    if (geo.s > 0.001)
-                    {
-                        Eigen::Matrix3d H = T_ * E_.transpose();
-
-                        // H = U * S * V^t
-                        Eigen::JacobiSVD<Eigen::MatrixXd> svd(H, Eigen::ComputeFullU | Eigen::ComputeFullV);
-
-                        // R = V * U^t
-                        geo.R = svd.matrixV() * svd.matrixU().transpose();
-
-                        geo.T = O_e - geo.s * geo.R * O_T;
-
-                        cout<<fixed<<"s: "<< geo.s << endl;
-                        cout<<fixed<<"R: "<< endl<< geo.R <<endl;
-                        cout<<fixed<<"T: "<< endl<< geo.T <<endl;
-
-
-                        mpAtlas->SetGeoMatrix(geo);
-
-                        Eigen::Matrix<double, 3, Eigen::Dynamic> all_inecef;
-                        all_inecef.resize(3, N);
-
-                        // 更新关键帧的InECEF坐标   TODO: 能否矩阵化?
-                        for (size_t i = 0; i < N; i++)
-                        {
-                            pKF = vpKFs[i];
-
-                            // E_.col(i) << pKF->mECEF.x, pKF->mECEF.y, pKF->mECEF.z;
-                            Eigen::Vector3d ecef(pKF->mECEF.x, pKF->mECEF.y, pKF->mECEF.z);
-
-                            Eigen::Vector3d inecef = (geo.R.transpose()*(ecef-geo.T))/geo.s;
-
-                            //pKF->mInECEF << inecef(0), inecef(1), inecef(2);
-
-                            pKF->mInECEF.x = inecef(0);
-                            pKF->mInECEF.y = inecef(1);
-                            pKF->mInECEF.z = inecef(2);
-
-                            all_inecef.col(i) = inecef;
-                        }
-
-                        // 更新关键帧协方差矩阵
-                        Eigen::Vector3d mean_inecef = all_inecef.rowwise().mean();          // 按行求均值，得到1列向量，
-                        all_inecef.colwise() -= mean_inecef;
-
-                        Eigen::Matrix3Xd co_inecef = all_inecef * all_inecef.transpose(); 
-
-                        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-                        Optimizer::GlobalBundleAdjustemntWithGPS(mpAtlas->GetCurrentMap(),co_inecef, 20);
-                        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-
-                        double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
-	                    cout << "GlobalBundleAdjustemntWithGPS time:" << ttrack << endl;
-                    }
-
-                    
-
-                    // cout<<"END: ------------------- end -----------------------"<<endl<<endl;
-                }
-
                 mpLoopCloser->InsertKeyFrame(mpCurrentKeyFrame);
 
 #ifdef REGISTER_TIMES
@@ -406,6 +291,135 @@ namespace ORB_SLAM3
         }
 
         SetFinish();
+    }
+
+    // 计算相似变换、将ECEF坐标转换到SLAM世界坐标系、协方差矩阵
+    void LocalMapping::HandleSomeGPS(Eigen::Matrix3Xd &co_inecef)
+    {
+        vector<KeyFrame *> vpKFs = mpAtlas->GetAllKeyFrames();
+
+        int N = (int)vpKFs.size();
+
+        // cout<<"Current keyframe num: "<<N<<endl;
+        if (N >= 3)
+        {
+            GeoTransform geo;
+
+            // 创始化相机质心
+            // cv::Mat O_T = (cv::Mat_<float>(3,1) << 0 , 0, 0);
+            // cv::Mat O_e = (cv::Mat_<float>(3,1) << 0 , 0, 0);
+            Eigen::Vector3d O_T;
+            Eigen::Vector3d O_e;
+
+            // 用于计算H
+            // cv::Mat T_ = cv::Mat_<float>(3, N);
+            // cv::Mat E_ = cv::Mat_<float>(3, N);
+            Eigen::Matrix<double, 3, Eigen::Dynamic> T_;
+            Eigen::Matrix<double, 3, Eigen::Dynamic> E_;
+
+            // 不能直接在定义的时候，直接写大小<3, N>
+            T_.resize(3, N);
+            E_.resize(3, N);
+
+            // cout<<"当前所有的关键帧数: ----------------- start -------------------------"<<N<<endl;
+
+            // 构造T、E
+            KeyFrame *pKF;
+            // cv::Mat twc;
+            // Eigen::Matrix<float, 3, 1> twc;
+            Eigen::Vector3f twc; // 3行1列向量，等价于上
+
+            for (size_t i = 0; i < N; i++)
+            {
+                pKF = vpKFs[i];
+
+                twc = pKF->GetCameraCenter();
+                // twc.convertTo(twc, CV_64FC1);
+                T_.col(i) = twc.cast<double>();
+                E_.col(i) << pKF->mECEF.x, pKF->mECEF.y, pKF->mECEF.z;
+            }
+
+            // cout<<"T初始: "<<endl<<T_<<endl<<endl;
+            // cout<<"E初始: "<<endl<<E_<<endl<<endl;
+
+            // T、E的按行求均值
+            O_T = T_.rowwise().mean();
+            O_e = E_.rowwise().mean();
+            // cout<<"T mean: "<<endl<<O_T<<endl<<endl;
+            // cout<<"E mean: "<<endl<<O_e<<endl<<endl;
+
+            // 矩阵-向量 广播运算
+            T_.colwise() -= O_T;
+            E_.colwise() -= O_e;
+            // cout<<"T减均值: "<<endl<<T_<<endl<<endl;
+            // cout<<"E减均值: "<<endl<<E_<<endl<<endl;
+
+            // 按列求norm,共N列
+            Eigen::VectorXd norm_t = T_.colwise().norm();
+            Eigen::VectorXd norm_e = E_.colwise().norm();
+
+            // 按元素相除,再取均值
+            geo.s = (norm_e.array() / norm_t.array()).matrix().mean();
+
+            // 判断s有效
+            if (geo.s > 0.001)
+            {
+                Eigen::Matrix3d H = T_ * E_.transpose();
+
+                // H = U * S * V^t
+                Eigen::JacobiSVD<Eigen::MatrixXd> svd(H, Eigen::ComputeFullU | Eigen::ComputeFullV);
+
+                // R = V * U^t
+                geo.R = svd.matrixV() * svd.matrixU().transpose();
+
+                geo.T = O_e - geo.s * geo.R * O_T;
+                
+                cout<<"#####################################################"<<endl;
+                cout<<fixed<<"s: "<< geo.s << endl;
+                cout<<fixed<<"R: "<< endl<< geo.R <<endl;
+                cout<<fixed<<"T: "<< endl<< geo.T <<endl;
+                cout<<"#####################################################"<<endl;
+
+                mpAtlas->SetGeoMatrix(geo);
+
+                Eigen::Matrix<double, 3, Eigen::Dynamic> all_inecef;
+                all_inecef.resize(3, N);
+
+                // 更新关键帧的InECEF坐标   TODO: 能否矩阵化?
+                for (size_t i = 0; i < N; i++)
+                {
+                    pKF = vpKFs[i];
+
+                    // E_.col(i) << pKF->mECEF.x, pKF->mECEF.y, pKF->mECEF.z;
+                    Eigen::Vector3d ecef(pKF->mECEF.x, pKF->mECEF.y, pKF->mECEF.z);
+
+                    Eigen::Vector3d inecef = (geo.R.transpose()*(ecef-geo.T))/geo.s;
+
+                    //pKF->mInECEF << inecef(0), inecef(1), inecef(2);
+
+                    pKF->mInECEF.x = inecef(0);
+                    pKF->mInECEF.y = inecef(1);
+                    pKF->mInECEF.z = inecef(2);
+
+                    all_inecef.col(i) = inecef;
+                }
+
+                // 更新关键帧协方差矩阵
+                Eigen::Vector3d mean_inecef = all_inecef.rowwise().mean();          // 按行求均值，得到1列向量，
+                all_inecef.colwise() -= mean_inecef;
+
+                co_inecef = all_inecef * all_inecef.transpose(); 
+
+                #if 0
+                std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+                Optimizer::GlobalBundleAdjustemntWithGPS(mpAtlas->GetCurrentMap(),co_inecef, 20);
+                std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+
+                double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+                cout <<endl<< "GlobalBundleAdjustemntWithGPS time:" << ttrack << endl <<endl;
+                #endif
+            }
+        }
     }
 
     void LocalMapping::InsertKeyFrame(KeyFrame *pKF)

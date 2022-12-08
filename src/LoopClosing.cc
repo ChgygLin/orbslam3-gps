@@ -2280,10 +2280,13 @@ void LoopClosing::RunGlobalBundleAdjustment(Map* pActiveMap, unsigned long nLoop
 
     const bool bImuInit = pActiveMap->isImuInitialized();
 
+    cout<<endl<<"######################################### GlobalBundleAdjustemnt ###########################################################################"<<endl;
     if(!bImuInit)
         Optimizer::GlobalBundleAdjustemnt(pActiveMap,10,&mbStopGBA,nLoopKF,false);
     else
         Optimizer::FullInertialBA(pActiveMap,7,false,nLoopKF,&mbStopGBA);
+    
+    cout<<"################################################## GlobalBundleAdjustemnt END ##################################################################"<<endl<<endl;
 
 #ifdef REGISTER_TIMES
     std::chrono::steady_clock::time_point time_EndGBA = std::chrono::steady_clock::now();

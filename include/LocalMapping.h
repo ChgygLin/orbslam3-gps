@@ -51,6 +51,8 @@ public:
     // Main function
     void Run();
 
+    void HandleSomeGPS(Eigen::Matrix3Xd &co_inecef);
+
     void InsertKeyFrame(KeyFrame* pKF);
     void EmptyQueue();
 
