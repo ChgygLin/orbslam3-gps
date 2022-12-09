@@ -539,8 +539,8 @@ void Viewer::Run()
     HotelPic = mpSystem->mRootPath + "/jd.png";
 
     cv::namedWindow("Hotel");
-    cout<<"############# HotelPic "<<HotelPic<<endl;
-    cout<<"############# path "<<path<<endl;
+    // cout<<"############# HotelPic "<<HotelPic<<endl;
+    // cout<<"############# path "<<path<<endl;
     cv::Mat frame = cv::imread(HotelPic, cv::IMREAD_UNCHANGED);
     cv::setMouseCallback("Hotel", MouseEvent2, NULL);
 

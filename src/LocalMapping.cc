@@ -153,6 +153,7 @@ namespace ORB_SLAM3
                             Eigen::Matrix3Xd co_inecef;
 
                             HandleSomeGPS(co_inecef);
+                            Optimizer::PrintGBAInfo(mpAtlas->GetAllKeyFrames(), mpAtlas->GetAllMapPoints());
 
                             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
                             // Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, &mbAbortBA, mpCurrentKeyFrame->GetMap(), num_FixedKF_BA, num_OptKF_BA, num_MPs_BA, num_edges_BA);
@@ -160,7 +161,8 @@ namespace ORB_SLAM3
                             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
                             double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
-                            cout <<endl<< "LocalBundleAdjustment time:" << ttrack << endl <<endl;
+
+                            cout << "############### LocalBundleAdjustment time:" << ttrack <<"s  ###############" << endl<< endl <<endl;
 
                             b_doneLBA = true;
                         }
@@ -374,11 +376,12 @@ namespace ORB_SLAM3
 
                 geo.T = O_e - geo.s * geo.R * O_T;
                 
-                cout<<"#####################################################"<<endl;
+                cout<<endl<<endl;
+                cout<<"######################## LocalMapping #############################"<<endl;
                 cout<<fixed<<"s: "<< geo.s << endl;
                 cout<<fixed<<"R: "<< endl<< geo.R <<endl;
                 cout<<fixed<<"T: "<< endl<< geo.T <<endl;
-                cout<<"#####################################################"<<endl;
+                cout<<"###########################"<<endl;
 
                 mpAtlas->SetGeoMatrix(geo);
 

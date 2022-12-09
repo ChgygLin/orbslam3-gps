@@ -46,6 +46,77 @@ namespace ORB_SLAM3
         return (a.second < b.second);
     }
 
+    void Optimizer::PrintGBAInfo(const vector<KeyFrame *> &vpKFs, const vector<MapPoint *> &vpMP)
+    {
+        Map *pMap = vpKFs[0]->GetMap();
+
+        g2o::SparseOptimizer optimizer;
+        g2o::BlockSolver_6_3::LinearSolverType *linearSolver;
+
+        linearSolver = new g2o::LinearSolverEigen<g2o::BlockSolver_6_3::PoseMatrixType>();
+
+        g2o::BlockSolver_6_3 *solver_ptr = new g2o::BlockSolver_6_3(linearSolver);
+
+        g2o::OptimizationAlgorithmLevenberg *solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
+        optimizer.setAlgorithm(solver);
+        optimizer.setVerbose(false);
+
+        long unsigned int maxKFid = 0;
+
+        // Set KeyFrame vertices
+
+        int nKF = 0;
+        for (size_t i = 0; i < vpKFs.size(); i++)
+        {
+            KeyFrame *pKF = vpKFs[i];
+            if (pKF->isBad())
+                continue;
+            g2o::VertexSE3Expmap *vSE3 = new g2o::VertexSE3Expmap();
+            Sophus::SE3<float> Tcw = pKF->GetPose();
+            vSE3->setEstimate(g2o::SE3Quat(Tcw.unit_quaternion().cast<double>(), Tcw.translation().cast<double>()));
+            vSE3->setId(pKF->mnId);
+            vSE3->setFixed(pKF->mnId == pMap->GetInitKFid());
+            optimizer.addVertex(vSE3);
+            if (pKF->mnId > maxKFid)
+                maxKFid = pKF->mnId;
+
+            nKF++;
+        }
+
+        int nMP = 0;
+        int nEdges = 0;
+        for (size_t i = 0; i < vpMP.size(); i++)
+        {
+            MapPoint *pMP = vpMP[i];
+            if (pMP->isBad())
+                continue;
+            g2o::VertexSBAPointXYZ *vPoint = new g2o::VertexSBAPointXYZ();
+            vPoint->setEstimate(pMP->GetWorldPos().cast<double>());
+            const int id = pMP->mnId + maxKFid + 1;
+            vPoint->setId(id);
+            vPoint->setMarginalized(true);
+            optimizer.addVertex(vPoint);
+
+            const map<KeyFrame *, tuple<int, int>> observations = pMP->GetObservations();
+
+            
+            // SET EDGES
+            for (map<KeyFrame *, tuple<int, int>>::const_iterator mit = observations.begin(); mit != observations.end(); mit++)
+            {
+                KeyFrame *pKF = mit->first;
+                if (pKF->isBad() || pKF->mnId > maxKFid)
+                    continue;
+                if (optimizer.vertex(id) == NULL || optimizer.vertex(pKF->mnId) == NULL)
+                    continue;
+                nEdges++;
+            }
+
+            nMP++;
+        }
+
+        cout<<"###############   GA KF: "<<nKF<<",  GA Mp: "<<nMP<<",  FIX KF: "<<1<<",  EDGES: "<<nEdges<<"   ###############"<<endl;
+    }
+
     void Optimizer::GlobalBundleAdjustemntWithGPS(Map *pMap, Eigen::Matrix3Xd co_inecef, int nIterations, bool *pbStopFlag, const unsigned long nLoopKF, const bool bRobust)
     {
         vector<KeyFrame *> vpKFs = pMap->GetAllKeyFrames();
@@ -2155,6 +2226,8 @@ namespace ORB_SLAM3
             }
         }
 
+        cout<<"###############   LA KF: "<<lLocalKeyFrames.size()<<",  LA Mp: "<<lLocalMapPoints.size()<<",  FIX KF: "<<num_fixedKF<<",  EDGES: "<<nEdges<<"   ###############"<<endl;
+
         // add GPS residual
         for (list<KeyFrame *>::iterator lit = lLocalKeyFrames.begin(), lend = lLocalKeyFrames.end(); lit != lend; lit++)
         {
@@ -2254,7 +2327,7 @@ namespace ORB_SLAM3
             g2o::VertexSBAPointXYZ *vPoint = static_cast<g2o::VertexSBAPointXYZ *>(optimizer.vertex(pMP->mnId + maxKFid + 1));
             pMP->SetWorldPos(vPoint->estimate().cast<float>());
             pMP->UpdateNormalAndDepth();
-        }
+        }        
 
         pMap->IncreaseChangeIndex();
     }

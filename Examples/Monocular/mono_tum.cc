@@ -144,7 +144,7 @@ int main(int argc, char **argv)
 #endif
 
         double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
-	cout << "TrackMonocular time:" << ttrack << endl;
+	    // cout << "TrackMonocular time:" << ttrack << endl;
         vTimesTrack[ni]=ttrack;
 
 /*

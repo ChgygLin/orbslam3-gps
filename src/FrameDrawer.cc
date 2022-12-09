@@ -709,7 +709,7 @@ void FrameDrawer::Update(Tracking *pTracker)
         cv::Point3d Ow_lll = ECEF2LLA(cv::Point3d((double)Ow_ecef(0), (double)Ow_ecef(1), (double)Ow_ecef(2)));
 
         cv::Point3d delta_gps = GetDeltaGps(Ow_lll, CurrentFrame.mGPS);
-        cout<<endl<<"delta lat: "<<delta_gps.x<<"m    delta lon: "<<delta_gps.y<<"m    delta alt: "<<delta_gps.z<<"m"<<endl<<endl;
+        cout<<"delta lat: "<<delta_gps.x<<"m    delta lon: "<<delta_gps.y<<"m    delta alt: "<<delta_gps.z<<"m"<<endl;
 
         for (int i=0; i<N; i++)
         {

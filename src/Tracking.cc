@@ -2455,7 +2455,7 @@ void Tracking::StereoInitialization()
 
 void Tracking::MonocularInitialization()
 {
-    cout<< "MonocularInitialization "<<endl;
+    // cout<< "MonocularInitialization "<<endl;
     if(!mbReadyToInitializate)
     {
         // Set Reference Frame
@@ -2506,7 +2506,7 @@ void Tracking::MonocularInitialization()
             return;
         }
 
-        cout<< "matcher sucess! "<<endl;
+        // cout<< "matcher sucess! "<<endl;
 
         Sophus::SE3f Tcw;
         vector<bool> vbTriangulated; // Triangulated Correspondences (mvIniMatches)
