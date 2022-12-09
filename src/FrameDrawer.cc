@@ -526,6 +526,8 @@ void FrameDrawer::DrawTextInfo(cv::Mat &im, int nState, cv::Mat &imText)
         else
             s << "LOCALIZATION | ";
         
+        s << mCurrentFrame.mnId;
+        s << " ";
         s << mCurrentFrame.mNameFile;
         s << " ";
 
