@@ -335,7 +335,7 @@ void MouseEvent(int event, int x, int y, int flags, void *data)
                     //cout<< "showPname_cur=" << showPname_cur << ",showPname_last=" << showPname_last << endl;
                     if (gps_cur.x > 0 && gps_cur.y > 0 && gps_cur.z > 0) {
                         double dist = GetDistance(gps_cur, cgps);
-                        cout << "Distance=" << dist << "m" << endl;
+                        cout << "Distance=" <<fixed<<setprecision(1)<< dist << "m" << endl;
                         //if (flags == cv::EVENT_FLAG_CTRLKEY && gps_cur != gps_last && showPname_cur != showPname_last) {
                         if (flags == cv::EVENT_FLAG_CTRLKEY) {
                             string fname = path + frameDrawer->mCurrentFrame.mNameFile + ".txt";
@@ -477,7 +477,7 @@ cv::Mat DrawFrame3(FrameDrawer* frameDrawer, cv::Mat &im)
         double distance = calcDistance(frameDrawer, ve[0]-1, ve[1], ve[2]);
         cv::Point2d pt(ve[1], ve[2]);
         cv::circle(im, pt, 2, cv::Scalar(0,0,255), -1);
-        cv::putText(im, to_string(distance), cv::Point(ve[1], ve[2]), cv::FONT_HERSHEY_PLAIN, 0.8, cv::Scalar(0,0,255), 1, 8);
+        cv::putText(im, str_format("%.01f", distance), cv::Point(ve[1], ve[2]), cv::FONT_HERSHEY_PLAIN, 0.8, cv::Scalar(0,0,255), 1, 8);
     }
     return im;
 }
@@ -532,11 +532,11 @@ void Viewer::Run()
 
     cv::setMouseCallback("3D Point", MouseEvent, mpFrameDrawer);
 
-    if(NULL == opendir(path.c_str()))
-		mkdir(path.c_str(), 0755);
-    
     path = mpSystem->mImgRootPath + "/reference/";
     HotelPic = mpSystem->mRootPath + "/jd.png";
+
+    if(NULL == opendir(path.c_str()))
+		mkdir(path.c_str(), 0755);
 
     cv::namedWindow("Hotel");
     // cout<<"############# HotelPic "<<HotelPic<<endl;

@@ -155,14 +155,22 @@ namespace ORB_SLAM3
                             HandleSomeGPS(co_inecef);
                             Optimizer::PrintGBAInfo(mpAtlas->GetAllKeyFrames(), mpAtlas->GetAllMapPoints());
 
-                            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-                            // Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, &mbAbortBA, mpCurrentKeyFrame->GetMap(), num_FixedKF_BA, num_OptKF_BA, num_MPs_BA, num_edges_BA);
-                            Optimizer::LocalBundleAdjustmentWithGPS(mpCurrentKeyFrame, co_inecef, &mbAbortBA, mpCurrentKeyFrame->GetMap(), num_FixedKF_BA, num_OptKF_BA, num_MPs_BA, num_edges_BA);
-                            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+                            #if 0
+                                std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+                                Optimizer::GlobalBundleAdjustemntWithGPS(mpAtlas->GetCurrentMap(),co_inecef, 20);
+                                std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
-                            double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+                                double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+                                cout << "############### GlobalBundleAdjustemntWithGPS time:" << ttrack <<"s  ###############" << endl<< endl <<endl;
+                            #else
+                                std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+                                // Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, &mbAbortBA, mpCurrentKeyFrame->GetMap(), num_FixedKF_BA, num_OptKF_BA, num_MPs_BA, num_edges_BA);
+                                Optimizer::LocalBundleAdjustmentWithGPS(mpCurrentKeyFrame, co_inecef, &mbAbortBA, mpCurrentKeyFrame->GetMap(), num_FixedKF_BA, num_OptKF_BA, num_MPs_BA, num_edges_BA);
+                                std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
-                            cout << "############### LocalBundleAdjustment time:" << ttrack <<"s  ###############" << endl<< endl <<endl;
+                                double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+                                cout << "############### LocalBundleAdjustment time:" << ttrack <<"s  ###############" << endl<< endl <<endl;
+                            #endif
 
                             b_doneLBA = true;
                         }
@@ -412,15 +420,6 @@ namespace ORB_SLAM3
                 all_inecef.colwise() -= mean_inecef;
 
                 co_inecef = all_inecef * all_inecef.transpose(); 
-
-                #if 0
-                std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-                Optimizer::GlobalBundleAdjustemntWithGPS(mpAtlas->GetCurrentMap(),co_inecef, 20);
-                std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-
-                double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
-                cout <<endl<< "GlobalBundleAdjustemntWithGPS time:" << ttrack << endl <<endl;
-                #endif
             }
         }
     }
