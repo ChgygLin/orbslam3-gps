@@ -711,7 +711,18 @@ void FrameDrawer::Update(Tracking *pTracker)
         cv::Point3d Ow_lll = ECEF2LLA(cv::Point3d((double)Ow_ecef(0), (double)Ow_ecef(1), (double)Ow_ecef(2)));
 
         cv::Point3d delta_gps = GetDeltaGps(Ow_lll, CurrentFrame.mGPS);
-        cout<<mCurrentFrame.mnId<<"  delta lat: "<<delta_gps.x<<"m    delta lon: "<<delta_gps.y<<"m    delta alt: "<<delta_gps.z<<"m"<<endl;
+        double dis = GetDistance(Ow_lll, CurrentFrame.mGPS);
+        cout<<setprecision(2)<<mCurrentFrame.mnId<<" "<<dis<<"m"<<"  delta lat: "<<delta_gps.x<<"m    delta lon: "<<delta_gps.y<<"m    delta alt: "<<delta_gps.z<<"m"<<endl;
+
+        string sTW = pTracker->GetSystem()->mRootPath + "/TW_err.txt";
+
+        static ofstream fTWerr;
+        if(!fTWerr)
+            fTWerr.open(sTW);
+
+        // TODO: fTWerr.close()
+        fTWerr<<mCurrentFrame.mnId<<" "<<dis<<" "<<delta_gps.x<<" "<<delta_gps.y<<" "<<delta_gps.z<<endl;
+
 
         for (int i=0; i<N; i++)
         {

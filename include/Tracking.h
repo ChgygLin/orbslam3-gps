@@ -108,6 +108,8 @@ public:
 
     float GetImageScale();
 
+    System* GetSystem();
+
 #ifdef REGISTER_LOOP
     void RequestStop();
     bool isStopped();

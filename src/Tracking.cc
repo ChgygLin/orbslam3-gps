@@ -532,6 +532,11 @@ Tracking::~Tracking()
 
 }
 
+System* Tracking::GetSystem()
+{
+    return mpSystem;
+}
+
 void Tracking::newParameterLoader(Settings *settings) {
     mpCamera = settings->camera1();
     mpCamera = mpAtlas->AddCamera(mpCamera);
