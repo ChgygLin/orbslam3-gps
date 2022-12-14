@@ -2757,11 +2757,15 @@ bool Tracking::TrackReferenceKeyFrame()
 
 
     // cout << " TrackReferenceKeyFrame mLastFrame.mTcw:  " << mLastFrame.mTcw << endl;
-    // Optimizer::PoseOptimization(&mCurrentFrame);
-    GeoTransform geo;
-    mpAtlas->GetGeoMatrix(geo);
+    // 
+    #ifdef USE_POSE_GPS
+        GeoTransform geo;
+        mpAtlas->GetGeoMatrix(geo);
 
-    Optimizer::PoseOptimizationWithGPS(&mCurrentFrame, geo);
+        Optimizer::PoseOptimizationWithGPS(&mCurrentFrame, geo);
+    #else
+        Optimizer::PoseOptimization(&mCurrentFrame);
+    #endif
 
     // Discard outliers
     int nmatchesMap = 0;
@@ -2925,11 +2929,15 @@ bool Tracking::TrackWithMotionModel()
     }
 
     // Optimize frame pose with all matches
-    // Optimizer::PoseOptimization(&mCurrentFrame);
-    GeoTransform geo;
-    mpAtlas->GetGeoMatrix(geo);
+    // 
+    #ifdef USE_POSE_GPS
+        GeoTransform geo;
+        mpAtlas->GetGeoMatrix(geo);
 
-    Optimizer::PoseOptimizationWithGPS(&mCurrentFrame, geo);
+        Optimizer::PoseOptimizationWithGPS(&mCurrentFrame, geo);
+    #else
+        Optimizer::PoseOptimization(&mCurrentFrame);
+    #endif
 
     // Discard outliers
     int nmatchesMap = 0;
@@ -2992,21 +3000,29 @@ bool Tracking::TrackLocalMap()
     int inliers;
     if (!mpAtlas->isImuInitialized())
     {
-        // Optimizer::PoseOptimization(&mCurrentFrame);
-        GeoTransform geo;
-        mpAtlas->GetGeoMatrix(geo);
+        #ifdef USE_POSE_GPS
+            GeoTransform geo;
+            mpAtlas->GetGeoMatrix(geo);
 
-        Optimizer::PoseOptimizationWithGPS(&mCurrentFrame, geo);
+            Optimizer::PoseOptimizationWithGPS(&mCurrentFrame, geo);
+        #else
+            Optimizer::PoseOptimization(&mCurrentFrame);
+        #endif
     }
     else
     {
         if(mCurrentFrame.mnId<=mnLastRelocFrameId+mnFramesToResetIMU)
         {
             Verbose::PrintMess("TLM: PoseOptimization ", Verbose::VERBOSITY_DEBUG);
-            //Optimizer::PoseOptimization(&mCurrentFrame);
-            GeoTransform geo;
-            mpAtlas->GetGeoMatrix(geo);
-            Optimizer::PoseOptimizationWithGPS(&mCurrentFrame, geo);
+
+            #ifdef USE_POSE_GPS
+                GeoTransform geo;
+                mpAtlas->GetGeoMatrix(geo);
+                
+                Optimizer::PoseOptimizationWithGPS(&mCurrentFrame, geo);
+            #else
+                Optimizer::PoseOptimization(&mCurrentFrame);
+            #endif
         }
         else
         {
@@ -3743,10 +3759,14 @@ bool Tracking::Relocalization()
                         mCurrentFrame.mvpMapPoints[j]=NULL;
                 }
 
-                GeoTransform geo;
-                mpAtlas->GetGeoMatrix(geo);
-                int nGood = Optimizer::PoseOptimizationWithGPS(&mCurrentFrame, geo);
-                // int nGood = Optimizer::PoseOptimization(&mCurrentFrame);
+                #ifdef USE_POSE_GPS
+                    GeoTransform geo;
+                    mpAtlas->GetGeoMatrix(geo);
+
+                    int nGood = Optimizer::PoseOptimizationWithGPS(&mCurrentFrame, geo);
+                #else
+                    int nGood = Optimizer::PoseOptimization(&mCurrentFrame);
+                #endif
 
                 if(nGood<10)
                     continue;
@@ -3762,10 +3782,14 @@ bool Tracking::Relocalization()
 
                     if(nadditional+nGood>=50)
                     {
-                        // nGood = Optimizer::PoseOptimization(&mCurrentFrame);
-                        GeoTransform geo;
-                        mpAtlas->GetGeoMatrix(geo);
-                        nGood = Optimizer::PoseOptimizationWithGPS(&mCurrentFrame, geo);
+                        #ifdef USE_POSE_GPS
+                            GeoTransform geo;
+                            mpAtlas->GetGeoMatrix(geo);
+
+                            nGood = Optimizer::PoseOptimizationWithGPS(&mCurrentFrame, geo);
+                        #else
+                            nGood = Optimizer::PoseOptimization(&mCurrentFrame);
+                        #endif
                         
 
                         // If many inliers but still not enough, search by projection again in a narrower window
@@ -3781,10 +3805,14 @@ bool Tracking::Relocalization()
                             // Final optimization
                             if(nGood+nadditional>=50)
                             {
-                                // nGood = Optimizer::PoseOptimization(&mCurrentFrame);
-                                GeoTransform geo;
-                                mpAtlas->GetGeoMatrix(geo);
-                                nGood = Optimizer::PoseOptimizationWithGPS(&mCurrentFrame, geo);
+                                #ifdef USE_POSE_GPS
+                                    GeoTransform geo;
+                                    mpAtlas->GetGeoMatrix(geo);
+
+                                    nGood = Optimizer::PoseOptimizationWithGPS(&mCurrentFrame, geo);
+                                #else
+                                    nGood = Optimizer::PoseOptimization(&mCurrentFrame);
+                                #endif
 
                                 for(int io =0; io<mCurrentFrame.N; io++)
                                     if(mCurrentFrame.mvbOutlier[io])

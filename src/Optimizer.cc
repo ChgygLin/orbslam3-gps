@@ -314,7 +314,7 @@ namespace ORB_SLAM3
 #endif
 
         // Optimize!
-        optimizer.setVerbose(true);
+        optimizer.setVerbose(false);
         optimizer.initializeOptimization();
         optimizer.optimize(nIterations);
 

@@ -26,6 +26,9 @@
 
 #include <vector>
 
+#define USE_LBA_GPS         // 局部建图中LBA融合GPS
+#define USE_POSE_GPS        // 当前帧位姿估计融合GPS
+
 typedef struct GeoTransform
 {
     /* data */
