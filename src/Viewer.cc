@@ -336,46 +336,44 @@ void MouseEvent(int event, int x, int y, int flags, void *data)
                     if (gps_cur.x > 0 && gps_cur.y > 0 && gps_cur.z > 0) {
                         double dist = GetDistance(gps_cur, cgps);
                         cout << "Distance=" <<fixed<<setprecision(1)<< dist << "m" << endl;
-                        //if (flags == cv::EVENT_FLAG_CTRLKEY && gps_cur != gps_last && showPname_cur != showPname_last) {
-                        if (flags == cv::EVENT_FLAG_CTRLKEY) {
-                            string fname = path + frameDrawer->mCurrentFrame.mNameFile + ".txt";
-                            //cout << "fname=" << fname << endl;
-                            vector<vector<int>> vve;
-                            getReferFromFile(vve, fname);
-                            std::unique_lock<std::mutex> lock(mfileMutex);
-                            ofstream f;
-                            //cout << "fname=" << fname << endl;
-                            
-                            f.open(fname.c_str(), ios_base::out|ios_base::trunc);
-                            if (f.is_open()) {
-                                //cout << "opened+++" << endl;
-                                if (vve.size() > 0) {
-                                    //cout << "vve.size()=" << vve.size() << endl;
-                                    for (int i = 0; i < vve.size(); i++) {
-                                        vector<int> ve = vve[i];
-                                        if (gpos+1 == ve[0]) {
-                                            ve[1] = x;
-                                            ve[2] = y;
-                                            x = y = -1;
-                                            cout << "override!!!!!!!" << endl;
-                                            cout << "Save: " << to_string(ve[0])+","+to_string(ve[1])+","+to_string(ve[2])<< endl;
-                                        }
-                                        f << to_string(ve[0])+","+to_string(ve[1])+","+to_string(ve[2])<< endl;
-                                    }
-                                    if (x >= 0 && y >= 0) {
-                                        cout << "Save: " << to_string(gpos+1)+","+to_string(x)+","+to_string(y)<< endl;
-                                        f << to_string(gpos+1)+","+to_string(x)+","+to_string(y)<< endl;
-                                    }
-                                } else {
-                                    cout << "Save: " << to_string(gpos+1)+","+to_string(x)+","+to_string(y)<< endl;
-                                    f << to_string(gpos+1)+","+to_string(x)+","+to_string(y)<< endl;
-                                }
-                                f.close();
-                            }
-                            //gps_last = gps_cur;
-                        }
                     }
                     break;
+                }
+            }
+            if (flags == cv::EVENT_FLAG_CTRLKEY) {
+                string fname = path + frameDrawer->mCurrentFrame.mNameFile + ".txt";
+                //cout << "fname=" << fname << endl;
+                vector<vector<int>> vve;
+                getReferFromFile(vve, fname);
+                std::unique_lock<std::mutex> lock(mfileMutex);
+                ofstream f;
+                //cout << "fname=" << fname << endl;
+                
+                f.open(fname.c_str(), ios_base::out|ios_base::trunc);
+                if (f.is_open()) {
+                    //cout << "opened+++" << endl;
+                    if (vve.size() > 0) {
+                        //cout << "vve.size()=" << vve.size() << endl;
+                        for (int i = 0; i < vve.size(); i++) {
+                            vector<int> ve = vve[i];
+                            if (gpos+1 == ve[0]) {
+                                ve[1] = x;
+                                ve[2] = y;
+                                x = y = -1;
+                                cout << "override!!!!!!!" << endl;
+                                cout << "Save: " << to_string(ve[0])+","+to_string(ve[1])+","+to_string(ve[2])<< endl;
+                            }
+                            f << to_string(ve[0])+","+to_string(ve[1])+","+to_string(ve[2])<< endl;
+                        }
+                        if (x >= 0 && y >= 0) {
+                            cout << "Save: " << to_string(gpos+1)+","+to_string(x)+","+to_string(y)<< endl;
+                            f << to_string(gpos+1)+","+to_string(x)+","+to_string(y)<< endl;
+                        }
+                    } else {
+                        cout << "Save: " << to_string(gpos+1)+","+to_string(x)+","+to_string(y)<< endl;
+                        f << to_string(gpos+1)+","+to_string(x)+","+to_string(y)<< endl;
+                    }
+                    f.close();
                 }
             }
         }
