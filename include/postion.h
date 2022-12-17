@@ -102,6 +102,7 @@ static double GetDistance(cv::Point3d gps1, cv::Point3d gps2)
     return s;
 }
 
+// 经度大为正，纬度大为正，海拔高为正，在坐标系以及实际地图中正为右上角
 static cv::Point3d GetDeltaGps(cv::Point3d gps1, cv::Point3d gps2)
 {
 
@@ -114,12 +115,12 @@ static cv::Point3d GetDeltaGps(cv::Point3d gps1, cv::Point3d gps2)
     double alt2 = gps2.z;
 
     // 经度1秒 约等于 30.87*cos纬度（米）
-    double delta_lon = abs(lon2-lon1)*3600*30.87*cos(lat1);
+    double delta_lon = (lon2-lon1)*3600*30.87*cos(DEG2RAD(lat1));
 
     // 纬度的1秒 = 30.8米
-    double delta_lat = abs(lat2-lat1)*3600*30.8;
+    double delta_lat = (lat2-lat1)*3600*30.8;
 
-    double delta_alt = abs(alt2-alt1);
+    double delta_alt = alt2-alt1;
 
     return cv::Point3d(delta_lat, delta_lon, delta_alt);
 }
